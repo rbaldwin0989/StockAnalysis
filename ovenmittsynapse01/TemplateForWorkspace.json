@@ -1,0 +1,275 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"type": "string",
+			"metadata": "Workspace name",
+			"defaultValue": "ovenmittsynapse01"
+		},
+		"ovenmittsynapse01-WorkspaceDefaultSqlServer_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'ovenmittsynapse01-WorkspaceDefaultSqlServer'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:ovenmittsynapse01.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"ovenmittsynapse01-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://ovenmittsynapsestorage.dfs.core.windows.net"
+		}
+	},
+	"variables": {
+		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/ovenmittsynapse01-WorkspaceDefaultSqlServer')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('ovenmittsynapse01-WorkspaceDefaultSqlServer_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/ovenmittsynapse01-WorkspaceDefaultStorage')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('ovenmittsynapse01-WorkspaceDefaultStorage_properties_typeProperties_url')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/WorkspaceSystemIdentity')]",
+			"type": "Microsoft.Synapse/workspaces/credentials",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Get_Stock_Data')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "sp01",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"runAsWorkspaceSystemIdentity": false,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "509d8ada-5574-4dd5-827c-5e87f548e3ac"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/8471121b-cea6-48d6-a54e-f71f63da15d6/resourceGroups/rg_ovenmitt_prod_centus_01/providers/Microsoft.Synapse/workspaces/ovenmittsynapse01/bigDataPools/sp01",
+						"name": "sp01",
+						"type": "Spark",
+						"endpoint": "https://ovenmittsynapse01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sp01",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.3",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28,
+						"automaticScaleJobs": false
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"tags": [
+								"parameters"
+							]
+						},
+						"source": [
+							"MyAPIKey = 'ySU0TYXTGTHAOSSWF'\n",
+							"Ticker = 'AAPL'"
+						],
+						"outputs": [],
+						"execution_count": 20
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from pyspark.sql import SparkSession\n",
+							"import requests\n",
+							"\n",
+							"# Define the API endpoint URL and query parameters\n",
+							"base_url = \"https://www.alphavantage.co/query\"\n",
+							"params = {\n",
+							"    \"function\": \"TIME_SERIES_DAILY_ADJUSTED\",\n",
+							"    \"symbol\": Ticker,\n",
+							"    \"apikey\": MyAPIKey,\n",
+							"    \"outputsize\": \"full\"\n",
+							"}\n",
+							"\n",
+							"# Send the API request and retrieve the response\n",
+							"response = requests.get(base_url, params=params)\n",
+							"\n",
+							"# Convert the response to a PySpark DataFrame\n",
+							"spark = SparkSession.builder.appName(\"AlphaVantageAPI\").getOrCreate()\n",
+							"data = []\n",
+							"for date in response.json()[\"Time Series (Daily)\"]:\n",
+							"    row = {\n",
+							"        \"ticker\": Ticker,\n",
+							"        \"date\": date,\n",
+							"        \"open\": float(response.json()[\"Time Series (Daily)\"][date][\"1. open\"]),\n",
+							"        \"high\": float(response.json()[\"Time Series (Daily)\"][date][\"2. high\"]),\n",
+							"        \"low\": float(response.json()[\"Time Series (Daily)\"][date][\"3. low\"]),\n",
+							"        \"close\": float(response.json()[\"Time Series (Daily)\"][date][\"4. close\"]),\n",
+							"        \"adjusted_close\": float(response.json()[\"Time Series (Daily)\"][date][\"5. adjusted close\"]),\n",
+							"        \"volume\": int(response.json()[\"Time Series (Daily)\"][date][\"6. volume\"]),\n",
+							"        \"dividend_amount\": float(response.json()[\"Time Series (Daily)\"][date][\"7. dividend amount\"]),\n",
+							"        \"split_coefficient\": float(response.json()[\"Time Series (Daily)\"][date][\"8. split coefficient\"])\n",
+							"    }\n",
+							"    data.append(row)\n",
+							"\n",
+							"df = spark.createDataFrame(data).select(\"Ticker\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Adjusted_Close\", \"Volume\", \"Dividend_Amount\", \"Split_Coefficient\")\n",
+							"\n",
+							"# Show the DataFrame"
+						],
+						"outputs": [],
+						"execution_count": 21
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/Stock')"
+						],
+						"outputs": [],
+						"execution_count": 22
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/sp01')]",
+			"type": "Microsoft.Synapse/workspaces/bigDataPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"autoPause": {
+					"enabled": true,
+					"delayInMinutes": 5
+				},
+				"autoScale": {
+					"enabled": false,
+					"maxNodeCount": 10,
+					"minNodeCount": 3
+				},
+				"nodeCount": 3,
+				"nodeSize": "Small",
+				"nodeSizeFamily": "MemoryOptimized",
+				"sparkVersion": "3.3",
+				"isComputeIsolationEnabled": false,
+				"sessionLevelPackagesEnabled": false,
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "centralus"
+		}
+	]
+}
