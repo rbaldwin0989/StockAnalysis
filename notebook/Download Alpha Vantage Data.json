@@ -18,14 +18,11 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "ca00938a-11ee-4669-a942-75e6dde435e0"
+				"spark.autotune.trackingId": "5767abac-6c51-479b-bd10-7f238e80df3e"
 			}
 		},
 		"metadata": {
 			"saveOutput": true,
-			"synapse_widget": {
-				"version": "0.1"
-			},
 			"enableDebugMode": false,
 			"kernelspec": {
 				"name": "synapse_pyspark",
@@ -41,14 +38,13 @@
 				"endpoint": "https://ovenmittsynapse01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sp01",
 				"auth": {
 					"type": "AAD",
-					"authResource": "https://dev.azuresynapse.net",
-					"authHeader": null
+					"authResource": "https://dev.azuresynapse.net"
 				},
 				"sparkVersion": "3.3",
 				"nodeCount": 3,
 				"cores": 4,
 				"memory": 28,
-				"extraHeader": null
+				"automaticScaleJobs": false
 			},
 			"sessionKeepAliveTimeout": 30
 		},
@@ -62,7 +58,7 @@
 					"# Define the API endpoint and parameters\n",
 					"api_key = \"ySU0TYXTGTHAOSSWF\"\n",
 					"ticker = \"AAPL\"\n",
-					"api_endpoint = f\"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol={ticker}&apikey={api_key}\"\n",
+					"api_endpoint = f\"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol={ticker}&apikey={api_key}&outputsize=full\"\n",
 					"\n",
 					"# Make the API request and retrieve the JSON response\n",
 					"response = requests.get(api_endpoint)\n",
@@ -77,7 +73,7 @@
 					"\n",
 					"# Print the DataFrame\n",
 					"df.show()\n",
-					"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://bronze@ovenmittsynapsestorage.dfs.core.windows.net/alphavantage')"
+					"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/alphavantage')"
 				],
 				"execution_count": 2
 			}
