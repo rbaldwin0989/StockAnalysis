@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "535c9a8d-17d3-4905-8670-3b42d7376c2f"
+				"spark.autotune.trackingId": "863bd051-9d88-4801-b562-93345e159a55"
 			}
 		},
 		"metadata": {
@@ -138,7 +138,7 @@
 					}
 				},
 				"source": [
-					"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/Stocks')"
+					"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/Stock')"
 				],
 				"execution_count": 22
 			}
