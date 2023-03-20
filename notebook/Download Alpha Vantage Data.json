@@ -1,0 +1,86 @@
+{
+	"name": "Download Alpha Vantage Data",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "sp01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "ca00938a-11ee-4669-a942-75e6dde435e0"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"synapse_widget": {
+				"version": "0.1"
+			},
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/8471121b-cea6-48d6-a54e-f71f63da15d6/resourceGroups/rg_ovenmitt_prod_centus_01/providers/Microsoft.Synapse/workspaces/ovenmittsynapse01/bigDataPools/sp01",
+				"name": "sp01",
+				"type": "Spark",
+				"endpoint": "https://ovenmittsynapse01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sp01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.3",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"from pyspark.sql import SparkSession\n",
+					"import requests\n",
+					"\n",
+					"# Define the API endpoint and parameters\n",
+					"api_key = \"ySU0TYXTGTHAOSSWF\"\n",
+					"ticker = \"AAPL\"\n",
+					"api_endpoint = f\"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol={ticker}&apikey={api_key}\"\n",
+					"\n",
+					"# Make the API request and retrieve the JSON response\n",
+					"response = requests.get(api_endpoint)\n",
+					"response_json = response.json()\n",
+					"\n",
+					"# Create a Spark session\n",
+					"spark = SparkSession.builder.appName(\"AlphaVantageData\").getOrCreate()\n",
+					"\n",
+					"# Convert the JSON response to a Spark DataFrame\n",
+					"data = list(response_json[\"Time Series (Daily)\"].items())\n",
+					"df = spark.createDataFrame(data, [\"date\", \"values\"])\n",
+					"\n",
+					"# Print the DataFrame\n",
+					"df.show()\n",
+					"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://bronze@ovenmittsynapsestorage.dfs.core.windows.net/alphavantage')"
+				],
+				"execution_count": 2
+			}
+		]
+	}
+}
