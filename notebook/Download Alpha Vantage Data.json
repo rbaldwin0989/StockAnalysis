@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "16f0f4e0-72be-479f-82c4-897ed7475324"
+				"spark.autotune.trackingId": "e7dec237-8aca-4a22-b9fe-6a0ec173d1ba"
 			}
 		},
 		"metadata": {
@@ -142,7 +142,7 @@
 				"source": [
 					"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/alphavantage')"
 				],
-				"execution_count": null
+				"execution_count": 22
 			}
 		]
 	}
