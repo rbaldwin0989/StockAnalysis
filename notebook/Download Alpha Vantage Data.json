@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "5767abac-6c51-479b-bd10-7f238e80df3e"
+				"spark.autotune.trackingId": "16f0f4e0-72be-479f-82c4-897ed7475324"
 			}
 		},
 		"metadata": {
@@ -51,31 +51,98 @@
 		"cells": [
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"MyAPIKey = 'ySU0TYXTGTHAOSSWF'\n",
+					"Ticker = 'AAPL'"
+				],
+				"execution_count": 20
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
 				"source": [
 					"from pyspark.sql import SparkSession\n",
 					"import requests\n",
 					"\n",
-					"# Define the API endpoint and parameters\n",
-					"api_key = \"ySU0TYXTGTHAOSSWF\"\n",
-					"ticker = \"AAPL\"\n",
-					"api_endpoint = f\"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol={ticker}&apikey={api_key}&outputsize=full\"\n",
+					"# Define the API endpoint URL and query parameters\n",
+					"base_url = \"https://www.alphavantage.co/query\"\n",
+					"params = {\n",
+					"    \"function\": \"TIME_SERIES_DAILY_ADJUSTED\",\n",
+					"    \"symbol\": Ticker,\n",
+					"    \"apikey\": MyAPIKey,\n",
+					"    \"outputsize\": \"full\"\n",
+					"}\n",
 					"\n",
-					"# Make the API request and retrieve the JSON response\n",
-					"response = requests.get(api_endpoint)\n",
-					"response_json = response.json()\n",
+					"# Send the API request and retrieve the response\n",
+					"response = requests.get(base_url, params=params)\n",
 					"\n",
-					"# Create a Spark session\n",
-					"spark = SparkSession.builder.appName(\"AlphaVantageData\").getOrCreate()\n",
+					"# Convert the response to a PySpark DataFrame\n",
+					"spark = SparkSession.builder.appName(\"AlphaVantageAPI\").getOrCreate()\n",
+					"data = []\n",
+					"for date in response.json()[\"Time Series (Daily)\"]:\n",
+					"    row = {\n",
+					"        \"ticker\": Ticker,\n",
+					"        \"date\": date,\n",
+					"        \"open\": float(response.json()[\"Time Series (Daily)\"][date][\"1. open\"]),\n",
+					"        \"high\": float(response.json()[\"Time Series (Daily)\"][date][\"2. high\"]),\n",
+					"        \"low\": float(response.json()[\"Time Series (Daily)\"][date][\"3. low\"]),\n",
+					"        \"close\": float(response.json()[\"Time Series (Daily)\"][date][\"4. close\"]),\n",
+					"        \"adjusted_close\": float(response.json()[\"Time Series (Daily)\"][date][\"5. adjusted close\"]),\n",
+					"        \"volume\": int(response.json()[\"Time Series (Daily)\"][date][\"6. volume\"]),\n",
+					"        \"dividend_amount\": float(response.json()[\"Time Series (Daily)\"][date][\"7. dividend amount\"]),\n",
+					"        \"split_coefficient\": float(response.json()[\"Time Series (Daily)\"][date][\"8. split coefficient\"])\n",
+					"    }\n",
+					"    data.append(row)\n",
 					"\n",
-					"# Convert the JSON response to a Spark DataFrame\n",
-					"data = list(response_json[\"Time Series (Daily)\"].items())\n",
-					"df = spark.createDataFrame(data, [\"date\", \"values\"])\n",
+					"df = spark.createDataFrame(data).select(\"Ticker\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Adjusted_Close\", \"Volume\", \"Dividend_Amount\", \"Split_Coefficient\")\n",
 					"\n",
-					"# Print the DataFrame\n",
+					"# Show the DataFrame\n",
 					"df.show()\n",
+					""
+				],
+				"execution_count": 21
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
 					"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/alphavantage')"
 				],
-				"execution_count": 2
+				"execution_count": null
 			}
 		]
 	}
