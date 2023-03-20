@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "863bd051-9d88-4801-b562-93345e159a55"
+				"spark.autotune.trackingId": "d4872aba-da49-4b0d-b45a-d55ecd30f9bc"
 			}
 		},
 		"metadata": {
@@ -88,6 +88,24 @@
 					"from pyspark.sql import SparkSession\n",
 					"import requests\n",
 					"\n",
+					"spark = SparkSession.builder.appName(\"StockAPI\").getOrCreate()"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
 					"# Define the API endpoint URL and query parameters\n",
 					"base_url = \"https://www.alphavantage.co/query\"\n",
 					"params = {\n",
@@ -101,7 +119,7 @@
 					"response = requests.get(base_url, params=params)\n",
 					"\n",
 					"# Convert the response to a PySpark DataFrame\n",
-					"spark = SparkSession.builder.appName(\"AlphaVantageAPI\").getOrCreate()\n",
+					"\n",
 					"data = []\n",
 					"for date in response.json()[\"Time Series (Daily)\"]:\n",
 					"    row = {\n",
@@ -116,13 +134,10 @@
 					"        \"dividend_amount\": float(response.json()[\"Time Series (Daily)\"][date][\"7. dividend amount\"]),\n",
 					"        \"split_coefficient\": float(response.json()[\"Time Series (Daily)\"][date][\"8. split coefficient\"])\n",
 					"    }\n",
-					"    data.append(row)\n",
-					"\n",
-					"df = spark.createDataFrame(data).select(\"Ticker\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Adjusted_Close\", \"Volume\", \"Dividend_Amount\", \"Split_Coefficient\")\n",
-					"\n",
-					"# Show the DataFrame"
+					"    data.append(row) \n",
+					"df = spark.createDataFrame(data).select(\"Ticker\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Adjusted_Close\", \"Volume\", \"Dividend_Amount\", \"Split_Coefficient\")"
 				],
-				"execution_count": 21
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
