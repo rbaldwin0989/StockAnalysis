@@ -1,5 +1,5 @@
 {
-	"name": "Download Alpha Vantage Data",
+	"name": "Get_Stock_Data",
 	"properties": {
 		"nbformat": 4,
 		"nbformat_minor": 2,
@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "e7dec237-8aca-4a22-b9fe-6a0ec173d1ba"
+				"spark.autotune.trackingId": "535c9a8d-17d3-4905-8670-3b42d7376c2f"
 			}
 		},
 		"metadata": {
@@ -120,9 +120,7 @@
 					"\n",
 					"df = spark.createDataFrame(data).select(\"Ticker\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Adjusted_Close\", \"Volume\", \"Dividend_Amount\", \"Split_Coefficient\")\n",
 					"\n",
-					"# Show the DataFrame\n",
-					"df.show()\n",
-					""
+					"# Show the DataFrame"
 				],
 				"execution_count": 21
 			},
@@ -140,7 +138,7 @@
 					}
 				},
 				"source": [
-					"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/alphavantage')"
+					"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/Stocks')"
 				],
 				"execution_count": 22
 			}
