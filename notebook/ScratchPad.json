@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "e779be5a-8b8b-468b-ab81-0862f747e7cd"
+				"spark.autotune.trackingId": "a91af4bd-8072-421c-87ef-5be04782da28"
 			}
 		},
 		"metadata": {
@@ -58,10 +58,78 @@
 				},
 				"source": [
 					"%%sql\n",
-					"CREATE DATABASE analyticssilve r;\n",
-					"CREATE TABLE analyticssilver.stocks FORMAT delta location 'abfss://analyticssilver@ovenmittsynapsestorage.dfs.core.windows.net/stocks';"
+					"CREATE DATABASE analyticssilve ;\n",
+					"CREATE TABLE analyticssilver.stocks Using delta location 'abfss://analyticssilver@ovenmittsynapsestorage.dfs.core.windows.net/stocks';"
 				],
 				"execution_count": 1
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from pyspark.sql.functions import expr, col\n",
+					"from pyspark.sql.types import DateType\n",
+					"from datetime import datetime, timedelta\n",
+					"\n",
+					"# Set start and end dates\n",
+					"start_date = datetime.strptime('1900-01-01', '%Y-%m-%d')\n",
+					"end_date = datetime.strptime('2100-12-31', '%Y-%m-%d')\n",
+					"\n",
+					"# Create a range of dates between start and end date\n",
+					"num_days = (end_date - start_date).days + 1\n",
+					"date_range = spark.range(num_days).withColumn('id', col('id').cast('int')).withColumn('Date', expr(f\"date_add(to_date('{start_date}'), id)\").cast(DateType()))\n",
+					"\n",
+					"date_range.show()"
+				],
+				"execution_count": 13
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from pyspark.sql.functions import expr, col\n",
+					"from pyspark.sql.types import DateType\n",
+					"from datetime import datetime, timedelta\n",
+					"\n",
+					"# Set start and end dates\n",
+					"start_date = datetime.strptime('1900-01-01', '%Y-%m-%d')\n",
+					"end_date = datetime.strptime('2100-12-31', '%Y-%m-%d')\n",
+					"\n",
+					"# Create a range of dates between start and end date, and cast to DateType\n",
+					"num_days = (end_date - start_date).days + 1\n",
+					"date_range = spark.range(num_days).withColumn('id', col('id').cast('int')).withColumn('Date', expr(f\"date_add(to_date('{start_date}'), id)\").cast(DateType()))\n",
+					"\n",
+					"# Create an ID column using the row number\n",
+					"date_range = date_range.withColumn('ID', col('id'))\n",
+					"\n",
+					"# Select only the ID and Date columns\n",
+					"df = date_range.select('ID', 'Date')\n",
+					"\n",
+					"# Show the resulting DataFrame\n",
+					"df.show()\n",
+					""
+				],
+				"execution_count": null
 			}
 		]
 	}
