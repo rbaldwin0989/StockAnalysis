@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "d4872aba-da49-4b0d-b45a-d55ecd30f9bc"
+				"spark.autotune.trackingId": "28fd91ac-3b95-4c83-ab0e-7109241908b3"
 			}
 		},
 		"metadata": {
@@ -67,9 +67,9 @@
 				},
 				"source": [
 					"MyAPIKey = 'ySU0TYXTGTHAOSSWF'\n",
-					"Ticker = 'AAPL'"
+					"Ticker = 'VOO'"
 				],
-				"execution_count": 20
+				"execution_count": 9
 			},
 			{
 				"cell_type": "code",
@@ -87,10 +87,11 @@
 				"source": [
 					"from pyspark.sql import SparkSession\n",
 					"import requests\n",
+					"import delta\n",
 					"\n",
 					"spark = SparkSession.builder.appName(\"StockAPI\").getOrCreate()"
 				],
-				"execution_count": null
+				"execution_count": 10
 			},
 			{
 				"cell_type": "code",
@@ -135,9 +136,9 @@
 					"        \"split_coefficient\": float(response.json()[\"Time Series (Daily)\"][date][\"8. split coefficient\"])\n",
 					"    }\n",
 					"    data.append(row) \n",
-					"df = spark.createDataFrame(data).select(\"Ticker\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Adjusted_Close\", \"Volume\", \"Dividend_Amount\", \"Split_Coefficient\")"
+					"StocksBronze_DF = spark.createDataFrame(data).select(\"Ticker\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Adjusted_Close\", \"Volume\", \"Dividend_Amount\", \"Split_Coefficient\")"
 				],
-				"execution_count": null
+				"execution_count": 11
 			},
 			{
 				"cell_type": "code",
@@ -153,9 +154,36 @@
 					}
 				},
 				"source": [
-					"df.write.format(\"delta\").mode(\"overwrite\").save('abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/Stock')"
+					"StocksSilver_DF = delta.DeltaTable.forPath(spark, 'abfss://analyticssilver@ovenmittsynapsestorage.dfs.core.windows.net/stocks')"
 				],
-				"execution_count": 22
+				"execution_count": 12
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"(\n",
+					"    StocksSilver_DF.alias('Target')\n",
+					"        .merge(\n",
+					"            StocksBronze_DF.alias('Source'),\n",
+					"            \"Target.Ticker = Source.Ticker and Target.Date = Source.Date\"\n",
+					"        )\n",
+					"    .whenMatchedUpdateAll()\n",
+					"    .whenNotMatchedInsertAll()\n",
+					"    .execute()\n",
+					")"
+				],
+				"execution_count": 15
 			}
 		]
 	}
