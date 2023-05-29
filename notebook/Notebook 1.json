@@ -1,0 +1,104 @@
+{
+	"name": "Notebook 1",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "sp01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "e967eefa-0ff6-418f-8b29-2350a57f753a"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/8471121b-cea6-48d6-a54e-f71f63da15d6/resourceGroups/rg_ovenmitt_prod_centus_01/providers/Microsoft.Synapse/workspaces/ovenmittsynapse01/bigDataPools/sp01",
+				"name": "sp01",
+				"type": "Spark",
+				"endpoint": "https://ovenmittsynapse01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sp01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.3",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"from pyspark.sql import SparkSession\n",
+					"from pyspark.sql.functions import when\n",
+					"import urllib.request\n",
+					"import gzip\n",
+					"import io\n",
+					"\n",
+					"# Create SparkSession\n",
+					"spark = SparkSession.builder.appName(\"IMDBData\").getOrCreate()\n",
+					"\n",
+					"# URL for the IMDb dataset\n",
+					"url = \"https://datasets.imdbws.com/title.basics.tsv.gz\"\n",
+					"\n",
+					"# Download and extract the file\n",
+					"response = urllib.request.urlopen(url)\n",
+					"compressed_file = io.BytesIO(response.read())\n",
+					"\n",
+					"# Extract the compressed file\n",
+					"with gzip.open(compressed_file, 'rb') as f_in:\n",
+					"    content = f_in.read()\n",
+					"\n",
+					"# Convert the content to string\n",
+					"content_str = content.decode('utf-8')\n",
+					"\n",
+					"# Split the lines by tab delimiter\n",
+					"lines = content_str.split('\\n')\n",
+					"\n",
+					"# Remove the first line (column names)\n",
+					"header = lines[0]\n",
+					"data = lines[1:]\n",
+					"\n",
+					"# Create RDD from the data\n",
+					"rdd = spark.sparkContext.parallelize(data)\n",
+					"\n",
+					"# Split each line by tab delimiter\n",
+					"rdd = rdd.map(lambda line: line.split('\\t'))\n",
+					"\n",
+					"# Convert RDD to DataFrame\n",
+					"df = rdd.toDF(header.split('\\t'))\n",
+					"\n",
+					"# Show the DataFrame\n",
+					"df.show()\n",
+					"\n",
+					"# Write the DataFrame to Parquet file\n",
+					"df.write.mode(\"overwrite\").parquet('abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/test.parquet')\n",
+					""
+				],
+				"execution_count": 2
+			}
+		]
+	}
+}
