@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "28fd91ac-3b95-4c83-ab0e-7109241908b3"
+				"spark.autotune.trackingId": "d0dec2d7-f719-4c93-93dd-cdf0fef9ed5f"
 			}
 		},
 		"metadata": {
@@ -67,9 +67,9 @@
 				},
 				"source": [
 					"MyAPIKey = 'ySU0TYXTGTHAOSSWF'\n",
-					"Ticker = 'VOO'"
+					"Ticker = 'AAPL'"
 				],
-				"execution_count": 9
+				"execution_count": 28
 			},
 			{
 				"cell_type": "code",
@@ -91,7 +91,7 @@
 					"\n",
 					"spark = SparkSession.builder.appName(\"StockAPI\").getOrCreate()"
 				],
-				"execution_count": 10
+				"execution_count": 29
 			},
 			{
 				"cell_type": "code",
@@ -110,7 +110,7 @@
 					"# Define the API endpoint URL and query parameters\n",
 					"base_url = \"https://www.alphavantage.co/query\"\n",
 					"params = {\n",
-					"    \"function\": \"TIME_SERIES_DAILY_ADJUSTED\",\n",
+					"    \"function\": \"TIME_SERIES_DAILY\",\n",
 					"    \"symbol\": Ticker,\n",
 					"    \"apikey\": MyAPIKey,\n",
 					"    \"outputsize\": \"full\"\n",
@@ -118,6 +118,7 @@
 					"\n",
 					"# Send the API request and retrieve the response\n",
 					"response = requests.get(base_url, params=params)\n",
+					"#print(response.json())\n",
 					"\n",
 					"# Convert the response to a PySpark DataFrame\n",
 					"\n",
@@ -130,15 +131,12 @@
 					"        \"high\": float(response.json()[\"Time Series (Daily)\"][date][\"2. high\"]),\n",
 					"        \"low\": float(response.json()[\"Time Series (Daily)\"][date][\"3. low\"]),\n",
 					"        \"close\": float(response.json()[\"Time Series (Daily)\"][date][\"4. close\"]),\n",
-					"        \"adjusted_close\": float(response.json()[\"Time Series (Daily)\"][date][\"5. adjusted close\"]),\n",
-					"        \"volume\": int(response.json()[\"Time Series (Daily)\"][date][\"6. volume\"]),\n",
-					"        \"dividend_amount\": float(response.json()[\"Time Series (Daily)\"][date][\"7. dividend amount\"]),\n",
-					"        \"split_coefficient\": float(response.json()[\"Time Series (Daily)\"][date][\"8. split coefficient\"])\n",
+					"        \"volume\": int(response.json()[\"Time Series (Daily)\"][date][\"5. volume\"])\n",
 					"    }\n",
 					"    data.append(row) \n",
-					"StocksBronze_DF = spark.createDataFrame(data).select(\"Ticker\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Adjusted_Close\", \"Volume\", \"Dividend_Amount\", \"Split_Coefficient\")"
+					"StocksBronze_DF = spark.createDataFrame(data).select(\"Ticker\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\")"
 				],
-				"execution_count": 11
+				"execution_count": 30
 			},
 			{
 				"cell_type": "code",
@@ -156,7 +154,7 @@
 				"source": [
 					"StocksSilver_DF = delta.DeltaTable.forPath(spark, 'abfss://analyticssilver@ovenmittsynapsestorage.dfs.core.windows.net/stocks')"
 				],
-				"execution_count": 12
+				"execution_count": 31
 			},
 			{
 				"cell_type": "code",
@@ -183,7 +181,7 @@
 					"    .execute()\n",
 					")"
 				],
-				"execution_count": 15
+				"execution_count": 32
 			}
 		]
 	}
