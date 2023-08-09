@@ -12,12 +12,12 @@
 			"driverCores": 4,
 			"executorMemory": "28g",
 			"executorCores": 4,
-			"numExecutors": 2,
+			"numExecutors": 1,
 			"conf": {
 				"spark.dynamicAllocation.enabled": "false",
-				"spark.dynamicAllocation.minExecutors": "2",
-				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "34f9f98a-1c8c-48e6-8a67-9d3b2530941c"
+				"spark.dynamicAllocation.minExecutors": "1",
+				"spark.dynamicAllocation.maxExecutors": "1",
+				"spark.autotune.trackingId": "ec1b9472-c195-431f-b55a-e359c9877186"
 			}
 		},
 		"metadata": {
@@ -85,12 +85,91 @@
 					"CSV_URL = 'https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=ySU0TYXTGTHAOSSWF'\n",
 					"\n",
 					"# Read CSV using Spark\n",
-					"df = spark.read.csv(CSV_URL, header=True)\n",
+					"df = spark.read.csv(CSV_URL, header=True, inferSchema= True)\n",
 					"\n",
 					"# Show the DataFrame\n",
 					"df.show()"
 				],
-				"execution_count": 4
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"import csv\n",
+					"import requests\n",
+					"\n",
+					"# Download the CSV file and save it locally\n",
+					"CSV_URL = 'https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=ySU0TYXTGTHAOSSWF'\n",
+					"local_file_path = 'abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/stocklistings/file.csv'\n",
+					"\n",
+					"with requests.Session() as s:\n",
+					"    download = s.get(CSV_URL)\n",
+					"    with open(local_file_path, 'wb') as f:\n",
+					"        f.write(download.content)\n",
+					"\n",
+					"# Read the downloaded CSV file using Spark\n",
+					"df = spark.read.csv(local_file_path, header=True)\n",
+					"\n",
+					"# Show the DataFrame\n",
+					"df.show()"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"import csv\n",
+					"import requests\n",
+					"from pyspark.sql import SparkSession\n",
+					"\n",
+					"# URL for the CSV file\n",
+					"CSV_URL = 'https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=ySU0TYXTGTHAOSSWF'\n",
+					"\n",
+					"# Download the CSV file and save it in a Spark DataFrame\n",
+					"with requests.Session() as s:\n",
+					"    download = s.get(CSV_URL)\n",
+					"    decoded_content = download.content.decode('utf-8')\n",
+					"    cr = csv.reader(decoded_content.splitlines(), delimiter=',')\n",
+					"    data = list(cr)\n",
+					"\n",
+					"# Extract headers from the first row\n",
+					"headers = data[0]\n",
+					"\n",
+					"# Remove the header row from the data\n",
+					"data = data[1:]\n",
+					"\n",
+					"# Create a Spark DataFrame from the data and specify column names\n",
+					"df = spark.createDataFrame(data, schema=headers)\n",
+					"\n",
+					"# Specify the target directory in Azure Data Lake Storage\n",
+					"target_directory = 'abfss://analyticsbronze@ovenmittsynapsestorage.dfs.core.windows.net/stocklistings/'\n",
+					"\n",
+					"# Write the DataFrame to the distributed file system\n",
+					"df.write.mode(\"overwrite\").option(\"header\", \"true\").csv(target_directory)"
+				],
+				"execution_count": 20
 			}
 		]
 	}
