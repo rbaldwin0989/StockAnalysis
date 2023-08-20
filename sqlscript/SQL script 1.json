@@ -1,0 +1,17 @@
+{
+	"name": "SQL script 1",
+	"properties": {
+		"content": {
+			"query": "-- This is auto-generated code\nSELECT DISTINCT\n[stocklist].symbol, [StockValues].ticker, [stocklist].name\nFROM\n   OPENROWSET(\n        BULK (\n            'https://ovenmittsynapsestorage.dfs.core.windows.net/analyticsbronze/stocklistings/part-00000-9d007b4d-4761-4af6-9f5f-12bee393fd49-c000.csv',\n\t\t\t'https://ovenmittsynapsestorage.dfs.core.windows.net/analyticsbronze/stocklistings/part-00001-9d007b4d-4761-4af6-9f5f-12bee393fd49-c000.csv',\n\t\t\t'https://ovenmittsynapsestorage.dfs.core.windows.net/analyticsbronze/stocklistings/part-00002-9d007b4d-4761-4af6-9f5f-12bee393fd49-c000.csv',\n\t\t\t'https://ovenmittsynapsestorage.dfs.core.windows.net/analyticsbronze/stocklistings/part-00003-9d007b4d-4761-4af6-9f5f-12bee393fd49-c000.csv'\n        ),\n        FORMAT = 'CSV',\n        PARSER_VERSION = '2.0',\n        HEADER_ROW = TRUE\n    ) AS [StockList] \nleft join OPENROWSET(\n        BULK 'https://ovenmittsynapsestorage.dfs.core.windows.net/analyticssilver/stocks/',\n        FORMAT = 'DELTA'\n    ) AS [StockValues] on [StockList].symbol = [StockValues].ticker\n    order by [StockList].symbol",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
