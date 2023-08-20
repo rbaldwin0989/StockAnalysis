@@ -1,0 +1,137 @@
+{
+	"name": "Notebook 2",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "sp01",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "a0fe31ec-e4f7-403f-8c79-ddef56b16e94"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/8471121b-cea6-48d6-a54e-f71f63da15d6/resourceGroups/rg_ovenmitt_prod_centus_01/providers/Microsoft.Synapse/workspaces/ovenmittsynapse01/bigDataPools/sp01",
+				"name": "sp01",
+				"type": "Spark",
+				"endpoint": "https://ovenmittsynapse01.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sp01",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.3",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"import csv\n",
+					"import requests\n",
+					"from pyspark.sql import SparkSession\n",
+					"import delta\n",
+					"\n",
+					"# Define the API key and base URL for Alpha Vantage\n",
+					"MyAPIKey = 'ySU0TYXTGTHAOSSWF'\n",
+					"base_url = \"https://www.alphavantage.co/query\"\n",
+					"\n",
+					"# Specify the target directory for the Delta table in Azure Data Lake Storage\n",
+					"delta_table_directory = 'abfss://analyticssilver@ovenmittsynapsestorage.dfs.core.windows.net/stocks'\n",
+					"\n",
+					"# URL for the CSV file\n",
+					"CSV_URL = 'https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=' + MyAPIKey\n",
+					"\n",
+					"# Create a Spark session\n",
+					"spark = SparkSession.builder.appName(\"StockUpdate\").getOrCreate()\n",
+					"\n",
+					"# Download the CSV file and save it in a Spark DataFrame\n",
+					"with requests.Session() as s:\n",
+					"    download = s.get(CSV_URL)\n",
+					"    decoded_content = download.content.decode('utf-8')\n",
+					"    cr = csv.reader(decoded_content.splitlines(), delimiter=',')\n",
+					"    data = list(cr)\n",
+					"\n",
+					"# Extract headers from the first row\n",
+					"headers = data[0]\n",
+					"\n",
+					"# Remove the header row from the data\n",
+					"data = data[1:]\n",
+					"\n",
+					"# Create a PySpark DataFrame from the data and specify column names\n",
+					"df = spark.createDataFrame(data, schema=headers)\n",
+					"\n",
+					"# Convert the DataFrame to a list of dictionaries for looping\n",
+					"stock_list = df.collect()\n",
+					"\n",
+					"# Loop through each stock and update the Delta table using the first script\n",
+					"for stock in stock_list:\n",
+					"    Ticker = stock['symbol']\n",
+					"    params = {\n",
+					"        \"function\": \"TIME_SERIES_DAILY\",\n",
+					"        \"symbol\": Ticker,\n",
+					"        \"apikey\": MyAPIKey,\n",
+					"        \"outputsize\": \"full\"\n",
+					"    }\n",
+					"    \n",
+					"    response = requests.get(base_url, params=params)\n",
+					"    data = []\n",
+					"    for date in response.json()[\"Time Series (Daily)\"]:\n",
+					"        row = {\n",
+					"            \"ticker\": Ticker,\n",
+					"            \"date\": date,\n",
+					"            \"open\": float(response.json()[\"Time Series (Daily)\"][date][\"1. open\"]),\n",
+					"            \"high\": float(response.json()[\"Time Series (Daily)\"][date][\"2. high\"]),\n",
+					"            \"low\": float(response.json()[\"Time Series (Daily)\"][date][\"3. low\"]),\n",
+					"            \"close\": float(response.json()[\"Time Series (Daily)\"][date][\"4. close\"]),\n",
+					"            \"volume\": int(response.json()[\"Time Series (Daily)\"][date][\"5. volume\"])\n",
+					"        }\n",
+					"        data.append(row) \n",
+					"    \n",
+					"    StocksBronze_DF = spark.createDataFrame(data).select(\"ticker\", \"date\", \"open\", \"high\", \"low\", \"close\", \"volume\")\n",
+					"    StocksSilver_DF = delta.DeltaTable.forPath(spark, delta_table_directory)\n",
+					"\n",
+					"    (\n",
+					"        StocksSilver_DF.alias('Target')\n",
+					"            .merge(\n",
+					"                StocksBronze_DF.alias('Source'),\n",
+					"                \"Target.ticker = Source.ticker and Target.date = Source.date\"\n",
+					"            )\n",
+					"        .whenMatchedUpdateAll()\n",
+					"        .whenNotMatchedInsertAll()\n",
+					"        .execute()\n",
+					"    )\n",
+					"\n",
+					"# Stop the Spark session\n",
+					"spark.stop()\n",
+					""
+				],
+				"execution_count": 1
+			}
+		]
+	}
+}
